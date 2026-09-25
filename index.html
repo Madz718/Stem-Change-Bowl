@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stem-Change Bowl</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{ --gold:#ffcc33; --red:#e53935; --panel:#1b1f16; --ink:#111; --brown:#5d3a1a; --brown-dark:#3e2610; --chalk:#f5f5dc; }
+*{box-sizing:border-box;}
+body{margin:0;min-height:100%;font-family:'Oswald',sans-serif;background:radial-gradient(circle at 50% 0%,#446b2e 0%,#1c2b14 70%);color:var(--chalk);display:flex;flex-direction:column;align-items:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}
+.wrap{width:100%;max-width:640px;}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(14px,4.5vw,24px);text-align:center;color:var(--gold);text-shadow:3px 3px 0 #7a1010;margin:4px 0 14px;}
+.scoreboard{background:var(--panel);border:4px solid #000;border-radius:6px;padding:10px 14px;display:flex;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:clamp(8px,2.4vw,12px);box-shadow:0 4px 0 #000;margin-bottom:14px;flex-wrap:wrap;gap:6px;}
+.scoreboard div{text-align:center;min-width:56px;}
+.scoreboard span{display:block;color:var(--gold);margin-top:4px;}
+.field-outer{background:repeating-linear-gradient(90deg,#2e7d32,#2e7d32 10%,#276829 10%,#276829 20%);border:4px solid var(--chalk);border-radius:4px;position:relative;height:60px;margin-bottom:4px;overflow:hidden;}
+.endzone{position:absolute;top:0;bottom:0;width:8%;background:repeating-linear-gradient(45deg,var(--red),var(--red) 6px,#b71c1c 6px,#b71c1c 12px);}
+.endzone.left{left:0;} .endzone.right{right:0;}
+.ball-marker{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:20px;transition:left .6s ease;}
+.yard-labels{display:flex;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:8px;color:#cfe8c8;margin-bottom:16px;padding:0 6%;}
+.card{background:var(--brown);border:4px solid var(--brown-dark);border-radius:8px;padding:18px;box-shadow:0 6px 0 var(--brown-dark);}
+.play-msg{font-family:'Press Start 2P',monospace;font-size:clamp(9px,2.8vw,13px);color:var(--gold);text-align:center;min-height:18px;margin-bottom:8px;}
+.question{text-align:center;font-size:clamp(17px,4.5vw,24px);font-weight:700;background:#fffdf2;color:var(--ink);border-radius:6px;padding:14px 10px;margin-bottom:14px;border:3px solid #000;}
+.question .verb{color:#7a1010;}
+.answer-row{display:flex;gap:8px;}
+#answerInput{flex:1;font-family:'Oswald',sans-serif;font-size:18px;padding:12px;border-radius:6px;border:3px solid #000;text-align:center;}
+#submitBtn{font-family:'Press Start 2P',monospace;font-size:11px;background:var(--gold);color:#000;border:3px solid #000;border-radius:6px;padding:0 14px;cursor:pointer;box-shadow:0 4px 0 #7a5c00;}
+#submitBtn:active{transform:translateY(3px);box-shadow:none;}
+.hint{font-size:12px;color:#e0e0c8;text-align:center;margin-top:8px;}
+canvas{width:100%;background:#3a8f3f;border:3px solid #000;border-radius:6px;display:block;touch-action:none;}
+.timerbar-outer{height:10px;background:#000;border-radius:5px;margin-top:6px;overflow:hidden;}
+.timerbar-inner{height:100%;background:var(--gold);width:100%;}
+.ctrl-row{display:flex;justify-content:center;gap:10px;margin-top:10px;}
+.wr-btn{font-family:'Press Start 2P',monospace;font-size:11px;background:var(--chalk);color:#000;border:3px solid #000;border-radius:8px;padding:14px 10px;cursor:pointer;box-shadow:0 4px 0 #000;flex:1;max-width:140px;}
+.wr-btn:active{transform:translateY(3px);box-shadow:none;}
+.ctrl-btn{font-family:'Press Start 2P',monospace;font-size:16px;width:56px;height:56px;border-radius:50%;border:3px solid #000;background:var(--chalk);color:#000;box-shadow:0 4px 0 #000;cursor:pointer;user-select:none;}
+.ctrl-btn:active{transform:translateY(3px);box-shadow:none;}
+.startscreen,.endscreen{text-align:center;}
+.bigbtn{font-family:'Press Start 2P',monospace;font-size:clamp(11px,3.5vw,15px);background:var(--gold);color:#000;border:4px solid #000;border-radius:8px;padding:16px 24px;cursor:pointer;box-shadow:0 5px 0 #7a5c00;margin-top:14px;}
+.bigbtn:active{transform:translateY(4px);box-shadow:none;}
+.sub{font-size:14px;color:#e0e0c8;margin-top:8px;line-height:1.5;}
+.footer-note{text-align:center;font-size:11px;color:#9db892;margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FOOTBALL TEXAS STEM-CHANGE BOWL</h1>
+  <div class="scoreboard">
+    <div>SCORE<span id="score">0</span></div>
+    <div>PLAY<span id="playnum">0</span></div>
+    <div>STREAK<span id="streak">0</span></div>
+    <div>QTR<span id="qtr">1</span></div>
+  </div>
+  <div class="field-outer">
+    <div class="endzone left"></div><div class="endzone right"></div>
+    <div class="ball-marker" id="ballMarker" style="left:25%">FB</div>
+  </div>
+  <div class="yard-labels"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+
+  <div class="card">
+    <div id="playMsg" class="play-msg"></div>
+
+    <div id="startscreen" class="startscreen">
+      <div class="sub">Type the correct conjugation to snap the ball. Get it right and you are under center: pick a receiver to throw to, then juke your way upfield after the catch. Miss it and you are sacked before the snap.</div>
+      <button class="bigbtn" id="startBtn">KICKOFF</button>
+    </div>
+
+    <div id="quizscreen" style="display:none;">
+      <div class="question" id="questionBox"></div>
+      <div class="answer-row">
+        <input id="answerInput" type="text" autocomplete="off" autocapitalize="off" placeholder="type the conjugation...">
+        <button id="submitBtn">SNAP</button>
+      </div>
+      <div class="timerbar-outer"><div class="timerbar-inner" id="quizTimerBar"></div></div>
+      <div class="hint">Accents optional. Press Enter to submit. Beat the play clock!</div>
+    </div>
+
+    <div id="pocketscreen" style="display:none;">
+      <canvas id="pocketCanvas" width="560" height="260"></canvas>
+      <div class="timerbar-outer"><div class="timerbar-inner" id="timerBar"></div></div>
+      <div class="ctrl-row">
+        <button class="wr-btn" id="wr1Btn">WR1 (1)</button>
+        <button class="wr-btn" id="wr2Btn">WR2 (2)</button>
+        <button class="wr-btn" id="wr3Btn">WR3 (3)</button>
+      </div>
+      <div class="hint">Throw before the pocket collapses — pick the open receiver!</div>
+    </div>
+
+    <div id="runscreen" style="display:none;">
+      <canvas id="runCanvas" width="560" height="220"></canvas>
+      <div class="ctrl-row">
+        <button class="ctrl-btn" id="leftBtn">L</button>
+        <button class="ctrl-btn" id="rightBtn">R</button>
+      </div>
+      <div class="hint">Arrow keys or L/R buttons to juke tacklers</div>
+    </div>
+
+    <div id="endscreen" class="endscreen" style="display:none;">
+      <div class="sub" id="endMsg"></div>
+      <button class="bigbtn" id="restartBtn">PLAY AGAIN</button>
+    </div>
+  </div>
+  <div class="footer-note">Verbs from spanishwithtati.com</div>
+</div>
+
+<script>
+var VERBS = {
+  pensar:["pienso","piensas","piensa","pensamos","piensan"],
+  cerrar:["cierro","cierras","cierra","cerramos","cierran"],
+  comenzar:["comienzo","comienzas","comienza","comenzamos","comienzan"],
+  despertar:["despierto","despiertas","despierta","despertamos","despiertan"],
+  recordar:["recuerdo","recuerdas","recuerda","recordamos","recuerdan"],
+  contar:["cuento","cuentas","cuenta","contamos","cuentan"],
+  encontrar:["encuentro","encuentras","encuentra","encontramos","encuentran"],
+  mostrar:["muestro","muestras","muestra","mostramos","muestran"],
+  soñar:["sueño","sueñas","sueña","soñamos","sueñan"],
+  querer:["quiero","quieres","quiere","queremos","quieren"],
+  entender:["entiendo","entiendes","entiende","entendemos","entienden"],
+  perder:["pierdo","pierdes","pierde","perdemos","pierden"],
+  poder:["puedo","puedes","puede","podemos","pueden"],
+  mover:["muevo","mueves","mueve","movemos","mueven"],
+  promover:["promuevo","promueves","promueve","promovemos","promueven"],
+  hacer:["hago","haces","hace","hacemos","hacen"],
+  poner:["pongo","pones","pone","ponemos","ponen"],
+  saber:["sé","sabes","sabe","sabemos","saben"],
+  conocer:["conozco","conoces","conoce","conocemos","conocen"],
+  preferir:["prefiero","prefieres","prefiere","preferimos","prefieren"],
+  sentir:["siento","sientes","siente","sentimos","sienten"],
+  pedir:["pido","pides","pide","pedimos","piden"],
+  seguir:["sigo","sigues","sigue","seguimos","siguen"],
+  sonreír:["sonrío","sonríes","sonríe","sonreímos","sonríen"],
+  vestir:["visto","vistes","viste","vestimos","visten"],
+  dormir:["duermo","duermes","duerme","dormimos","duermen"],
+  salir:["salgo","sales","sale","salimos","salen"]
+};
+var PRONOUNS = ["yo","tú","él/ella/Ud.","nosotros","ellos/ellas/Uds."];
+var verbNames = Object.keys(VERBS);
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function norm(s){ return s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
+
+var score=0, playnum=0, streak=0, yard=25, current=null;
+var TOTAL_PLAYS = 12;
+
+function el(id){ return document.getElementById(id); }
+var scoreEl=el("score"), playnumEl=el("playnum"), streakEl=el("streak"), qtrEl=el("qtr"), ballMarker=el("ballMarker");
+var playMsg=el("playMsg"), questionBox=el("questionBox"), answerInput=el("answerInput");
+var startscreen=el("startscreen"), quizscreen=el("quizscreen"), pocketscreen=el("pocketscreen"), runscreen=el("runscreen"), endscreen=el("endscreen");
+var pocketCanvas=el("pocketCanvas"), pctx=pocketCanvas.getContext("2d");
+var runCanvas=el("runCanvas"), rctx=runCanvas.getContext("2d");
+var timerBar=el("timerBar");
+var quizTimerBar=el("quizTimerBar");
+var quizInterval=null, quizTimeLeft=0;
+var QUIZ_TIME=8;
+
+el("startBtn").addEventListener("click", startGame);
+el("restartBtn").addEventListener("click", function(){ score=0;playnum=0;streak=0;yard=25; updateHUD(); startGame(); });
+el("submitBtn").addEventListener("click", submitAnswer);
+answerInput.addEventListener("keydown", function(e){ if(e.key==="Enter") submitAnswer(); });
+
+function startGame(){
+  startscreen.style.display="none"; endscreen.style.display="none";
+  quizscreen.style.display="block"; pocketscreen.style.display="none"; runscreen.style.display="none";
+  updateHUD(); nextQuestion();
+}
+function updateHUD(){
+  scoreEl.textContent=score; playnumEl.textContent=playnum; streakEl.textContent=streak;
+  qtrEl.textContent=Math.min(4,Math.floor(playnum/3)+1);
+  ballMarker.style.left=(8+yard*0.84)+"%";
+}
+function nextQuestion(){
+  var verb=pick(verbNames), idx=Math.floor(Math.random()*PRONOUNS.length);
+  current={verb:verb, pronoun:PRONOUNS[idx], correct:VERBS[verb][idx]};
+  questionBox.innerHTML="Conjugate <span class=\"verb\">"+current.verb+"</span> for <u>"+current.pronoun+"</u>";
+  answerInput.value=""; playMsg.textContent="";
+  quizscreen.style.display="block"; pocketscreen.style.display="none"; runscreen.style.display="none";
+  setTimeout(function(){ answerInput.focus(); }, 50);
+  startQuizTimer();
+}
+function startQuizTimer(){
+  clearInterval(quizInterval);
+  quizTimeLeft=QUIZ_TIME;
+  quizTimerBar.style.width="100%";
+  quizInterval=setInterval(function(){
+    quizTimeLeft-=0.1;
+    var pct=Math.max(0,(quizTimeLeft/QUIZ_TIME)*100);
+    quizTimerBar.style.width=pct+"%";
+    if(quizTimeLeft<=0){
+      clearInterval(quizInterval);
+      handleQuizTimeout();
+    }
+  }, 100);
+}
+function handleQuizTimeout(){
+  playnum++;
+  streak=0;
+  var loss=6+Math.floor(Math.random()*6);
+  yard=Math.max(0,yard-loss);
+  playMsg.textContent="DELAY OF GAME! OUT OF TIME -"+loss+" YDS (was: "+current.correct+")";
+  updateHUD();
+  quizscreen.style.display="none";
+  if(playnum>=TOTAL_PLAYS) setTimeout(endGame,1400); else setTimeout(nextQuestion,1600);
+}
+function submitAnswer(){
+  clearInterval(quizInterval);
+  playnum++;
+  if(norm(answerInput.value)===norm(current.correct)){
+    streak++; score+=3;
+    playMsg.textContent="SNAP TAKEN -- YOU ARE LIVE!";
+    quizscreen.style.display="none";
+    setTimeout(launchPocket, 600);
+  } else {
+    streak=0;
+    var loss=5+Math.floor(Math.random()*6);
+    yard=Math.max(0,yard-loss);
+    playMsg.textContent="SACKED BEFORE THE SNAP! -"+loss+" YDS (correct: "+current.correct+")";
+    updateHUD();
+    if(playnum>=TOTAL_PLAYS) setTimeout(endGame,1400); else setTimeout(nextQuestion,1600);
+  }
+}
+
+// ---------- POCKET PHASE: pick a receiver ----------
+var lanesX=[90,280,470];
+var receivers=[], pocketRAF=null, pocketRunning=false, pocketElapsed=0, pocketLast=0;
+var POCKET_TIME=2.5;
+
+function launchPocket(){
+  pocketscreen.style.display="block";
+  receivers=[
+    {lane:0, y:225, speed:70+Math.random()*25, sep:8+Math.random()*45, wobblePhase:Math.random()*10},
+    {lane:1, y:225, speed:65+Math.random()*20, sep:8+Math.random()*45, wobblePhase:Math.random()*10},
+    {lane:2, y:225, speed:70+Math.random()*25, sep:8+Math.random()*45, wobblePhase:Math.random()*10}
+  ];
+  pocketElapsed=0; pocketRunning=true; pocketLast=performance.now();
+  timerBar.style.width="100%";
+  pocketRAF=requestAnimationFrame(pocketLoop);
+}
+function pocketLoop(ts){
+  if(!pocketRunning) return;
+  var dt=Math.min(0.05,(ts-pocketLast)/1000); pocketLast=ts;
+  pocketElapsed+=dt;
+  receivers.forEach(function(r){
+    r.y -= r.speed*dt;
+    r.sep += Math.sin(pocketElapsed*3.4+r.wobblePhase)*10*dt;
+    if(r.sep<5) r.sep=5;
+  });
+  var pct=Math.max(0,100-(pocketElapsed/POCKET_TIME)*100);
+  timerBar.style.width=pct+"%";
+  if(pocketElapsed>=POCKET_TIME){
+    pocketRunning=false; cancelAnimationFrame(pocketRAF);
+    var loss=6+Math.floor(Math.random()*6);
+    yard=Math.max(0,yard-loss);
+    pocketscreen.style.display="none";
+    playMsg.textContent="POCKET COLLAPSED -- SACKED! -"+loss+" YDS";
+    updateHUD();
+    if(playnum>=TOTAL_PLAYS) setTimeout(endGame,1400); else setTimeout(nextQuestion,1600);
+    return;
+  }
+  drawPocket();
+  pocketRAF=requestAnimationFrame(pocketLoop);
+}
+function drawPocket(){
+  pctx.clearRect(0,0,560,260);
+  pctx.fillStyle="#3a8f3f"; pctx.fillRect(0,0,560,260);
+  pctx.strokeStyle="rgba(255,255,255,0.35)"; pctx.lineWidth=2;
+  [185,375].forEach(function(x){ pctx.beginPath(); pctx.moveTo(x,0); pctx.lineTo(x,260); pctx.stroke(); });
+  receivers.forEach(function(r,i){
+    var x=lanesX[r.lane];
+    // defender trailing by r.sep pixels (smaller sep = tighter coverage)
+    var dy=r.y+r.sep;
+    pctx.fillStyle="#c62828";
+    pctx.beginPath(); pctx.arc(x,dy,13,0,7); pctx.fill();
+    var openness = r.sep>55 ? "#8bc34a" : (r.sep>28 ? "#ffcc33" : "#e53935");
+    pctx.fillStyle=openness;
+    pctx.beginPath(); pctx.arc(x,r.y,13,0,7); pctx.fill();
+    pctx.fillStyle="#000"; pctx.font="bold 11px monospace"; pctx.textAlign="center";
+    pctx.fillText("WR"+(i+1), x, r.y+4);
+  });
+  pctx.fillStyle="#fff"; pctx.beginPath(); pctx.arc(280,240,10,0,7); pctx.fill();
+  pctx.fillStyle="#000"; pctx.font="bold 9px monospace"; pctx.fillText("QB", 280, 243);
+}
+function throwTo(idx){
+  if(!pocketRunning) return;
+  pocketRunning=false; cancelAnimationFrame(pocketRAF);
+  var r=receivers[idx];
+  var sep=r.sep;
+  var catchProb = Math.min(0.85, Math.max(0.12, 0.12 + sep/75));
+  var depthYards = Math.round((225-r.y)/2.4);
+  pocketscreen.style.display="none";
+  if(Math.random()>catchProb){
+    if(sep<32 && Math.random()<0.6){
+      var loss=6+Math.floor(Math.random()*5);
+      yard=Math.max(0,yard-loss);
+      playMsg.textContent="INTERCEPTED! -"+loss+" YDS";
+      updateHUD();
+      if(playnum>=TOTAL_PLAYS) setTimeout(endGame,1400); else setTimeout(nextQuestion,1600);
+    } else {
+      playMsg.textContent="PASS DEFENSED -- INCOMPLETE";
+      if(playnum>=TOTAL_PLAYS) setTimeout(endGame,1400); else setTimeout(nextQuestion,1600);
+    }
+  } else {
+    playMsg.textContent="CAUGHT IT! TAKE IT UPFIELD!";
+    launchRun(depthYards);
+  }
+}
+el("wr1Btn").addEventListener("click", function(){ throwTo(0); });
+el("wr2Btn").addEventListener("click", function(){ throwTo(1); });
+el("wr3Btn").addEventListener("click", function(){ throwTo(2); });
+document.addEventListener("keydown", function(e){
+  if(pocketscreen.style.display==="block"){
+    if(e.key==="1") throwTo(0);
+    if(e.key==="2") throwTo(1);
+    if(e.key==="3") throwTo(2);
+  }
+});
+
+// ---------- RUN AFTER CATCH PHASE ----------
+var runLanes=[90,280,470], laneIdx=1, playerX=280, playerY=190;
+var defenders=[], runRAF=null, runRunning=false, runElapsed=0, runLast=0, spawnTimer=0, baseYards=0;
+var RUN_DURATION=4.6;
+
+function launchRun(depthYards){
+  baseYards=depthYards;
+  runscreen.style.display="block";
+  laneIdx=1; playerX=280; playerY=190; runElapsed=0; defenders=[]; spawnTimer=0;
+  runRunning=true; runLast=performance.now();
+  runRAF=requestAnimationFrame(runLoop);
+}
+function spawnDefender(){ defenders.push({lane:Math.floor(Math.random()*3), y:-20, speed:105+Math.random()*60}); }
+function runLoop(ts){
+  if(!runRunning) return;
+  var dt=Math.min(0.05,(ts-runLast)/1000); runLast=ts;
+  runElapsed+=dt; spawnTimer+=dt;
+  if(spawnTimer>0.5){ spawnTimer=0; spawnDefender(); }
+  defenders.forEach(function(d){ d.y+=d.speed*dt; });
+  defenders=defenders.filter(function(d){ return d.y<240; });
+  playerX += (runLanes[laneIdx]-playerX)*0.25;
+  for(var i=0;i<defenders.length;i++){
+    var d=defenders[i];
+    if(d.lane===laneIdx && Math.abs(d.y-playerY)<22){
+      runRunning=false; cancelAnimationFrame(runRAF);
+      finishRun("TACKLED!", baseYards+Math.round(runElapsed*8));
+      return;
+    }
+  }
+  if(runElapsed>=RUN_DURATION){
+    runRunning=false; cancelAnimationFrame(runRAF);
+    finishRun("RAN OUT OF ROOM -- BROUGHT DOWN", baseYards+Math.round(runElapsed*8)+8);
+    return;
+  }
+  drawRun();
+  runRAF=requestAnimationFrame(runLoop);
+}
+function drawRun(){
+  rctx.clearRect(0,0,560,220);
+  rctx.fillStyle="#3a8f3f"; rctx.fillRect(0,0,560,220);
+  rctx.strokeStyle="rgba(255,255,255,0.35)"; rctx.lineWidth=2;
+  [185,375].forEach(function(x){ rctx.beginPath(); rctx.moveTo(x,0); rctx.lineTo(x,220); rctx.stroke(); });
+  defenders.forEach(function(d){
+    rctx.fillStyle="#c62828"; rctx.fillRect(runLanes[d.lane]-16, d.y-16, 32, 32);
+  });
+  rctx.fillStyle="#ffcc33";
+  rctx.beginPath(); rctx.arc(playerX, playerY, 13, 0, 7); rctx.fill();
+  rctx.fillStyle="#000"; rctx.font="10px monospace"; rctx.textAlign="left";
+  rctx.fillText("t: "+runElapsed.toFixed(1)+"s", 8, 16);
+}
+function moveLane(dir){ if(runRunning) laneIdx=Math.max(0,Math.min(2,laneIdx+dir)); }
+el("leftBtn").addEventListener("click", function(){ moveLane(-1); });
+el("rightBtn").addEventListener("click", function(){ moveLane(1); });
+document.addEventListener("keydown", function(e){
+  if(runscreen.style.display==="block"){
+    if(e.key==="ArrowLeft"||e.key==="a") moveLane(-1);
+    if(e.key==="ArrowRight"||e.key==="d") moveLane(1);
+  }
+});
+function finishRun(label, yardsGained){
+  runscreen.style.display="none";
+  yard=Math.min(100,yard+yardsGained);
+  playMsg.textContent=label+" +"+yardsGained+" YARDS";
+  if(yard>=100){ score+=7; playMsg.textContent="TOUCHDOWN! +7! ("+label+")"; yard=25; }
+  updateHUD();
+  if(playnum>=TOTAL_PLAYS) setTimeout(endGame,1500); else setTimeout(nextQuestion,1600);
+}
+
+function endGame(){
+  quizscreen.style.display="none"; pocketscreen.style.display="none"; runscreen.style.display="none";
+  endscreen.style.display="block";
+  var rank="PRACTICE SQUAD";
+  if(score>=55) rank="MVP QUARTERBACK";
+  else if(score>=38) rank="STARTING LINEUP";
+  else if(score>=20) rank="ROOKIE OF THE YEAR";
+  el("endMsg").innerHTML="<strong style=\"font-family:'Press Start 2P',monospace;font-size:14px;color:#ffcc33;\">FINAL SCORE: "+score+"</strong><br><br>"+rank+"<br>"+TOTAL_PLAYS+" plays completed.";
+}
+updateHUD();
+</script>
+</body>
+</html>
